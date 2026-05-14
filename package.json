@@ -4,10 +4,15 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
-    "hono": "^4.12.18"
+    "@hono/zod-validator": "^0.8.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.18",
+    "jose": "^6.2.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "better-sqlite3": "^12.10.0",
+    "drizzle-kit": "^0.31.10"
   }
 }

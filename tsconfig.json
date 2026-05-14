@@ -2,6 +2,12 @@
   "compilerOptions": {
     "strict": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "baseUrl": "./src",
+    "paths": {
+      "@db/*": ["db/*"],
+      "@middleware/*": ["middleware/*"],
+      "@routes/*": ["routes/*"]
+    }
   }
 }

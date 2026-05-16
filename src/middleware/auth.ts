@@ -1,5 +1,5 @@
+import { verifyToken } from '@services/auth';
 import { createMiddleware } from 'hono/factory';
-import { verifyToken } from '../services/auth';
 
 type Variables = {
   userId: number;

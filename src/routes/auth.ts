@@ -2,10 +2,10 @@ import { SQLiteError } from 'bun:sqlite';
 import { db } from '@db/index';
 import { users } from '@db/schema';
 import { zValidator } from '@hono/zod-validator';
+import { createToken } from '@services/auth';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createToken } from '../services/auth';
 
 const app = new Hono();
 

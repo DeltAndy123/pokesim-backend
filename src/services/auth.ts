@@ -5,7 +5,7 @@ const SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 export async function createToken(userId: number) {
   return new SignJWT({ userId })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('30m') // TODO: change to 14d, 30m for now for testing
+    .setExpirationTime('14d')
     .sign(SECRET);
 }
 

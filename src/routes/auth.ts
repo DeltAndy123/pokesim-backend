@@ -1,7 +1,7 @@
 import { SQLiteError } from 'bun:sqlite';
 import { db } from '@db/index';
 import { users } from '@db/schema';
-import { zValidator } from '@hono/zod-validator';
+import { validate } from '@middleware/validate';
 import { createToken } from '@services/auth';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -14,7 +14,7 @@ const registerSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-app.post('/register', zValidator('json', registerSchema), async (c) => {
+app.post('/register', validate('json', registerSchema), async (c) => {
   const { username, password } = c.req.valid('json');
 
   try {
@@ -29,20 +29,20 @@ app.post('/register', zValidator('json', registerSchema), async (c) => {
 
     const token = await createToken(user.id);
 
-    return c.json({ success: true, token }, 201);
+    return c.json({ token }, 201);
   } catch (error) {
     if (
       error instanceof SQLiteError &&
       error.code === 'SQLITE_CONSTRAINT_UNIQUE'
     ) {
       return c.json(
-        { success: false, message: 'Username already exists' },
+        { message: 'Username already exists' },
         400,
       );
     }
 
     console.error('Error during registration:', error);
-    return c.json({ success: false, message: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
@@ -51,7 +51,7 @@ const loginSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
-app.post('/login', zValidator('json', loginSchema), async (c) => {
+app.post('/login', validate('json', loginSchema), async (c) => {
   const { username, password } = c.req.valid('json');
 
   try {
@@ -65,17 +65,17 @@ app.post('/login', zValidator('json', loginSchema), async (c) => {
       const success = await Bun.password.verify(password, user.passwordHash);
       if (success) {
         const token = await createToken(user.id);
-        return c.json({ success: true, token });
+        return c.json({ token });
       }
     }
 
     return c.json(
-      { success: false, message: 'Invalid username or password' },
+      { message: 'Invalid username or password' },
       401,
     );
   } catch (error) {
     console.error('Error during login:', error);
-    return c.json({ success: false, message: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 

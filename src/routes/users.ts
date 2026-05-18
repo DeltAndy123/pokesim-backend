@@ -1,7 +1,7 @@
 import { db } from '@db/index';
 import { users } from '@db/schema';
-import { zValidator } from '@hono/zod-validator';
 import { authMiddleware } from '@middleware/auth';
+import { validate } from '@middleware/validate';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -29,7 +29,7 @@ app.get('/me', authMiddleware, async (c) => {
     });
   } catch (error) {
     console.error('Error fetching user:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
@@ -37,7 +37,7 @@ const userSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-app.get('/:id', zValidator('param', userSchema), async (c) => {
+app.get('/:id', validate('param', userSchema), async (c) => {
   const { id } = c.req.valid('param');
 
   try {
@@ -47,7 +47,7 @@ app.get('/:id', zValidator('param', userSchema), async (c) => {
       .where(eq(users.id, id))
       .limit(1);
 
-    if (!user) return c.json({ error: 'User not found' }, 404);
+    if (!user) return c.json({ message: 'User not found' }, 404);
 
     return c.json({
       id: user.id,
@@ -56,7 +56,7 @@ app.get('/:id', zValidator('param', userSchema), async (c) => {
     });
   } catch (error) {
     console.error('Error fetching user:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 

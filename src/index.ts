@@ -1,9 +1,12 @@
+import { loggerMiddleware } from '@middleware/logger';
 import auth from '@routes/auth';
 import teams from '@routes/teams';
 import users from '@routes/users';
 import { Hono } from 'hono';
 
 const app = new Hono();
+
+app.use(loggerMiddleware);
 
 app.route('/auth', auth);
 app.route('/users', users);

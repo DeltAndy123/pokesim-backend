@@ -1,9 +1,9 @@
 import { db } from '@db/index';
 import { teamPokemon, teams } from '@db/schema';
-import { zValidator } from '@hono/zod-validator';
 import { authMiddleware } from '@middleware/auth';
+import { validate } from '@middleware/validate';
 import { validateTeam } from '@services/validate';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -24,10 +24,30 @@ app.get('/', async (c) => {
       .from(teams)
       .where(eq(teams.userId, userId));
 
-    return c.json(userTeams);
+    if (userTeams.length === 0) return c.json([]);
+
+    const teamIds = userTeams.map((t) => t.id);
+    const allPokemon = await db
+      .select({ teamId: teamPokemon.teamId, pokemonId: teamPokemon.pokemonId })
+      .from(teamPokemon)
+      .where(inArray(teamPokemon.teamId, teamIds));
+
+    const pokemonByTeam = new Map<number, number[]>();
+    for (const row of allPokemon) {
+      const list = pokemonByTeam.get(row.teamId) ?? [];
+      list.push(row.pokemonId);
+      pokemonByTeam.set(row.teamId, list);
+    }
+
+    return c.json(
+      userTeams.map((team) => ({
+        ...team,
+        pokemon: pokemonByTeam.get(team.id) ?? []
+      }))
+    );
   } catch (error) {
     console.error('Error fetching teams:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
@@ -35,7 +55,7 @@ const getTeamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-app.get('/:id', zValidator('param', getTeamSchema), async (c) => {
+app.get('/:id', validate('param', getTeamSchema), async (c) => {
   const userId = c.get('userId');
   const { id } = c.req.valid('param');
 
@@ -46,21 +66,28 @@ app.get('/:id', zValidator('param', getTeamSchema), async (c) => {
       .where(and(eq(teams.userId, userId), eq(teams.id, id)))
       .limit(1);
 
-    if (!team) return c.json({ error: 'Team not found' }, 404);
+    if (!team) return c.json({ message: 'Team not found' }, 404);
 
     const pokemon = await db
       .select()
       .from(teamPokemon)
       .where(eq(teamPokemon.teamId, team.id));
 
-    return c.json({ ...team, pokemon });
+    return c.json({
+      ...team,
+      pokemon: pokemon.map((p) => ({
+        id: p.id,
+        teamId: p.teamId,
+        moves: [p.moveOneId, p.moveTwoId, p.moveThreeId, p.moveFourId].filter(Boolean) as number[],
+      }))
+    });
   } catch (error) {
     console.error('Error fetching team:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
-app.delete('/:id', zValidator('param', getTeamSchema), async (c) => {
+app.delete('/:id', validate('param', getTeamSchema), async (c) => {
   const userId = c.get('userId');
   const { id } = c.req.valid('param');
 
@@ -71,13 +98,13 @@ app.delete('/:id', zValidator('param', getTeamSchema), async (c) => {
       .returning();
 
     if (deleteResult.length === 0) {
-      return c.json({ error: 'Team not found' }, 404);
+      return c.json({ message: 'Team not found' }, 404);
     }
 
-    return c.json({ success: true });
+    return c.body(null, 204)
   } catch (error) {
     console.error('Error deleting team:', error);
-    return c.json({ error: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
@@ -94,14 +121,14 @@ const teamSchema = z.object({
     .max(6),
 });
 
-app.post('/', zValidator('json', teamSchema), async (c) => {
+app.post('/', validate('json', teamSchema), async (c) => {
   const userId = c.get('userId');
   const { name, pokemon } = c.req.valid('json');
 
   try {
     const validation = await validateTeam(pokemon);
     if (!validation.result) {
-      return c.json({ success: false, message: validation.reason }, 400);
+      return c.json({ message: validation.reason }, 400);
     }
 
     const [team] = await db.insert(teams).values({ userId, name }).returning();
@@ -117,14 +144,14 @@ app.post('/', zValidator('json', teamSchema), async (c) => {
       })),
     );
 
-    return c.json({ success: true, teamId: team.id }, 201);
+    return c.json({ teamId: team.id }, 201);
   } catch (error) {
     console.error('Error creating team:', error);
-    return c.json({ success: false, message: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 
-app.put('/:id', zValidator('param', getTeamSchema), zValidator('json', teamSchema), async (c) => {
+app.put('/:id', validate('param', getTeamSchema), validate('json', teamSchema), async (c) => {
   const userId = c.get('userId');
   const { id } = c.req.valid('param');
   const { name, pokemon } = c.req.valid('json');
@@ -132,7 +159,7 @@ app.put('/:id', zValidator('param', getTeamSchema), zValidator('json', teamSchem
   try {
     const validation = await validateTeam(pokemon);
     if (!validation.result) {
-      return c.json({ success: false, message: validation.reason }, 400);
+      return c.json({ message: validation.reason }, 400);
     }
 
     const [team] = await db
@@ -142,7 +169,7 @@ app.put('/:id', zValidator('param', getTeamSchema), zValidator('json', teamSchem
       .returning();
 
     if (!team) {
-      return c.json({ success: false, message: 'Team not found' }, 404);
+      return c.json({ message: 'Team not found' }, 404);
     }
 
     await db
@@ -160,10 +187,10 @@ app.put('/:id', zValidator('param', getTeamSchema), zValidator('json', teamSchem
       })),
     );
 
-    return c.json({ success: true });
+    return c.body(null, 204);
   } catch (error) {
     console.error('Error updating team:', error);
-    return c.json({ success: false, message: 'Internal server error' }, 500);
+    return c.json({ message: 'Internal server error' }, 500);
   }
 });
 

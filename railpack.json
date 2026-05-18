@@ -1,0 +1,22 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      "commands": [
+        { "src": "package.json", "dest": "package.json" },
+        { "src": "bun.lock", "dest": "bun.lock" },
+        "bun install --frozen-lockfile"
+      ]
+    },
+    "build": {
+      "inputs": [{ "step": "install" }],
+      "commands": [
+        { "src": ".", "dest": "." },
+        "bun run db:migrate"
+      ]
+    }
+  },
+  "deploy": {
+    "startCommand": "bun run start"
+  }
+}

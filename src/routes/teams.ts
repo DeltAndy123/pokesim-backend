@@ -78,6 +78,7 @@ app.get('/:id', validate('param', getTeamSchema), async (c) => {
       pokemon: pokemon.map((p) => ({
         id: p.id,
         teamId: p.teamId,
+        pokemonId: p.pokemonId,
         moves: [p.moveOneId, p.moveTwoId, p.moveThreeId, p.moveFourId].filter(Boolean) as number[],
       }))
     });

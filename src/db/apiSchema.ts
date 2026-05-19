@@ -63,6 +63,22 @@ export const apiPokemonStat = sqliteTable('pokemon_v2_pokemonstat', {
   statId: integer('stat_id'),
 });
 
+// CREATE TABLE IF NOT EXISTS "pokemon_v2_pokemontype" ("id" INTEGER NOT NULL, "slot" INTEGER NOT NULL, "pokemon_id" INTEGER, "type_id" INTEGER);
+export const apiPokemonType = sqliteTable('pokemon_v2_pokemontype', {
+  id: integer('id').notNull(),
+  slot: integer('slot').notNull(),
+  pokemonId: integer('pokemon_id'),
+  typeId: integer('type_id'),
+});
+
+// CREATE TABLE IF NOT EXISTS "pokemon_v2_typeefficacy" ("id" INTEGER NOT NULL, "damage_factor" INTEGER NOT NULL, "damage_type_id" INTEGER, "target_type_id" INTEGER);
+export const apiTypeEfficacy = sqliteTable('pokemon_v2_typeefficacy', {
+  id: integer('id').notNull(),
+  damageFactor: integer('damage_factor').notNull(),
+  damageTypeId: integer('damage_type_id'),
+  targetTypeId: integer('target_type_id'),
+});
+
 // CREATE TABLE IF NOT EXISTS "pokemon_v2_pokemonmove" ("id" INTEGER NOT NULL, "order" INTEGER, "level" INTEGER NOT NULL, "move_id" INTEGER, "pokemon_id" INTEGER, "version_group_id" INTEGER, "move_learn_method_id" INTEGER, "mastery" INTEGER);
 export const apiPokemonMove = sqliteTable('pokemon_v2_pokemonmove', {
   id: integer('id').notNull(),

@@ -12,5 +12,5 @@ export const logger = {
     if (process.env.DEBUG) {
       console.log(`\x1b[34m[DEBUG]\x1b[0m`, ...message);
     }
-  }
-}
+  },
+};

@@ -1,11 +1,11 @@
 import { db } from '@db/index';
 import { teamPokemon } from '@db/schema';
-import { calcMaxHP, resolveTurn } from '@services/battleEngine';
-import type { BattleSideState, ServerMessage } from '@services/battleMessages';
-import type { BattleRoom, BattlingPlayer } from '@services/battleTypes';
 import { logger } from '@util/logger';
 import { eq } from 'drizzle-orm';
 import type { WSContext } from 'hono/ws';
+import { calcMaxHP, resolveTurn } from './engine';
+import type { BattleSideState, ServerMessage } from './messages';
+import type { BattleRoom, BattlingPlayer } from './types';
 
 const battlingPlayers: Map<number, BattlingPlayer> = new Map();
 const rooms: Map<string, BattleRoom> = new Map();

@@ -1,8 +1,9 @@
-import { apiMove, apiPokemonStat } from '@db/apiSchema';
+import { apiMove, apiPokemonStat, apiPokemonType } from '@db/apiSchema';
 import { apiDb } from '@db/index';
-import type { MoveOutcome } from '@services/battleMessages';
-import type { BattleRoom, BattlingPlayer } from '@services/battleTypes';
+import { getTypeMultiplier } from '@services/battle/typeChart';
 import { eq } from 'drizzle-orm';
+import type { MoveOutcome } from './messages';
+import type { BattleRoom, BattlingPlayer } from './types';
 
 const LEVEL = 50;
 
@@ -16,12 +17,13 @@ const STAT_SPEED = 6;
 
 // move_damage_class_id constants
 const CLASS_PHYSICAL = 2;
-const CLASS_SPECIAL = 3;
+const _CLASS_SPECIAL = 3;
 
 interface MoveData {
   power: number | null;
   moveDamageClassId: number | null;
   priority: number | null;
+  typeId: number | null;
 }
 
 interface PokemonStats {
@@ -39,6 +41,7 @@ async function fetchMoveData(moveId: number): Promise<MoveData | null> {
       power: apiMove.power,
       moveDamageClassId: apiMove.moveDamageClassId,
       priority: apiMove.priority,
+      typeId: apiMove.typeId,
     })
     .from(apiMove)
     .where(eq(apiMove.id, moveId))
@@ -70,11 +73,25 @@ async function fetchStats(pokemonId: number): Promise<PokemonStats> {
   };
 }
 
-function calcDamage(power: number, atk: number, def: number): number {
+async function fetchTypes(pokemonId: number): Promise<number[]> {
+  const rows = await apiDb
+    .select({ typeId: apiPokemonType.typeId })
+    .from(apiPokemonType)
+    .where(eq(apiPokemonType.pokemonId, pokemonId));
+
+  return rows.map((r) => r.typeId).filter((t) => t != null);
+}
+
+function calcDamage(
+  power: number,
+  atk: number,
+  def: number,
+  multiplier: number,
+): number {
   const base =
     Math.floor((Math.floor((2 * LEVEL) / 5 + 2) * power * atk) / def / 50) + 2;
   const roll = 0.85 + Math.random() * 0.15;
-  return Math.max(1, Math.floor(base * roll));
+  return Math.max(1, Math.floor(base * roll * multiplier));
 }
 
 function applyMove(
@@ -84,6 +101,7 @@ function applyMove(
   moveData: MoveData,
   atkStats: PokemonStats,
   defStats: PokemonStats,
+  defTypes: number[],
   outcomes: MoveOutcome[],
 ): boolean {
   const power = moveData.power;
@@ -93,8 +111,11 @@ function applyMove(
   const atk = isPhysical ? atkStats.attack : atkStats.spAtk;
   const def = isPhysical ? defStats.defense : defStats.spDef;
 
-  const damage = calcDamage(power, atk, def);
   const target = defender.pokemon[defender.activeSlot];
+
+  const effectiveness = getTypeMultiplier(moveData.typeId ?? 1, defTypes);
+
+  const damage = calcDamage(power, atk, def, effectiveness);
   target.hp = Math.max(0, target.hp - damage);
 
   outcomes.push({
@@ -102,6 +123,7 @@ function applyMove(
     moveId,
     targetUserId: defender.id,
     damageDealt: damage,
+    effectiveness,
     fainted: target.hp === 0,
   });
 
@@ -123,11 +145,13 @@ export async function resolveTurn(
   const activePokemon1 = player1.pokemon[player1.activeSlot];
   const activePokemon2 = player2.pokemon[player2.activeSlot];
 
-  const [move1, move2, stats1, stats2] = await Promise.all([
+  const [move1, move2, stats1, stats2, types1, types2] = await Promise.all([
     fetchMoveData(move1Id),
     fetchMoveData(move2Id),
     fetchStats(activePokemon1.id),
     fetchStats(activePokemon2.id),
+    fetchTypes(activePokemon1.id),
+    fetchTypes(activePokemon2.id),
   ]);
 
   // Turn order: priority bracket first, then speed, then random tiebreak
@@ -154,6 +178,7 @@ export async function resolveTurn(
         move1,
         stats1,
         stats2,
+        types2,
         outcomes,
       );
       if (fainted) {
@@ -161,7 +186,16 @@ export async function resolveTurn(
       }
     }
     if (move2)
-      applyMove(player2, player1, move2Id, move2, stats2, stats1, outcomes);
+      applyMove(
+        player2,
+        player1,
+        move2Id,
+        move2,
+        stats2,
+        stats1,
+        types1,
+        outcomes,
+      );
   } else {
     if (move2) {
       const fainted = applyMove(
@@ -171,12 +205,22 @@ export async function resolveTurn(
         move2,
         stats2,
         stats1,
+        types1,
         outcomes,
       );
       if (fainted) return outcomes;
     }
     if (move1)
-      applyMove(player1, player2, move1Id, move1, stats1, stats2, outcomes);
+      applyMove(
+        player1,
+        player2,
+        move1Id,
+        move1,
+        stats1,
+        stats2,
+        types2,
+        outcomes,
+      );
   }
 
   return outcomes;

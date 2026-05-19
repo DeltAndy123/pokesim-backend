@@ -36,6 +36,7 @@ export interface MoveOutcome {
   moveId: number;
   targetUserId: number;
   damageDealt: number;
+  effectiveness: number;
   fainted: boolean;
 }
 

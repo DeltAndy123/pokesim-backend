@@ -2,6 +2,7 @@ import { db } from '@db/index';
 import { users } from '@db/schema';
 import { authMiddleware, type Variables } from '@middleware/auth';
 import { validate } from '@middleware/validate';
+import { logger } from '@util/logger';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -24,7 +25,7 @@ app.get('/me', authMiddleware, async (c) => {
       createdAt: user.createdAt,
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logger.error('Error fetching user:', error);
     return c.json({ message: 'Internal server error' }, 500);
   }
 });
@@ -51,7 +52,7 @@ app.get('/:id', validate('param', userSchema), async (c) => {
       createdAt: user.createdAt,
     });
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logger.error('Error fetching user:', error);
     return c.json({ message: 'Internal server error' }, 500);
   }
 });

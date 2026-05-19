@@ -3,6 +3,7 @@ import { teamPokemon } from '@db/schema';
 import { calcMaxHP, resolveTurn } from '@services/battleEngine';
 import type { BattleSideState, ServerMessage } from '@services/battleMessages';
 import type { BattleRoom, BattlingPlayer } from '@services/battleTypes';
+import { logger } from '@util/logger';
 import { eq } from 'drizzle-orm';
 import type { WSContext } from 'hono/ws';
 
@@ -46,7 +47,7 @@ export async function joinQueue(
       .from(teamPokemon)
       .where(eq(teamPokemon.teamId, teamId));
   } catch (error) {
-    console.error('Error fetching user:', error);
+    logger.error('Error fetching user:', error);
     return wsContext.send(
       JSON.stringify({ type: 'error', message: 'Internal server error' }),
     );

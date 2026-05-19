@@ -10,7 +10,8 @@
       "@db/*": ["db/*"],
       "@middleware/*": ["middleware/*"],
       "@routes/*": ["routes/*"],
-      "@services/*": ["services/*"]
+      "@services/*": ["services/*"],
+      "@util/*": ["util/*"]
     }
   }
 }

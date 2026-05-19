@@ -1,9 +1,10 @@
+import { logger } from '@util/logger';
 import { createMiddleware } from 'hono/factory';
 
 export const loggerMiddleware = createMiddleware(async (c, next) => {
-  console.log('Request received:', c.req.method, c.req.url);
+  logger.debug('Request received:', c.req.method, c.req.url);
   await next();
-  console.log('Response sent:', c.res.status);
-  console.log('Response body:', await c.res.clone().text());
-  console.log('----------------------------------------');
+  logger.debug('Response sent:', c.res.status);
+  logger.debug('Response body:', await c.res.clone().text());
+  logger.debug('----------------------------------------');
 });

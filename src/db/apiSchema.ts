@@ -54,6 +54,15 @@ export const apiMove = sqliteTable('pokemon_v2_move', {
   superContestEffectId: integer('super_contest_effect_id'),
 });
 
+// CREATE TABLE IF NOT EXISTS "pokemon_v2_pokemonstat" ("id" INTEGER NOT NULL, "base_stat" INTEGER NOT NULL, "effort" INTEGER NOT NULL, "pokemon_id" INTEGER, "stat_id" INTEGER);
+export const apiPokemonStat = sqliteTable('pokemon_v2_pokemonstat', {
+  id: integer('id').notNull(),
+  baseStat: integer('base_stat').notNull(),
+  effort: integer('effort').notNull(),
+  pokemonId: integer('pokemon_id'),
+  statId: integer('stat_id'),
+});
+
 // CREATE TABLE IF NOT EXISTS "pokemon_v2_pokemonmove" ("id" INTEGER NOT NULL, "order" INTEGER, "level" INTEGER NOT NULL, "move_id" INTEGER, "pokemon_id" INTEGER, "version_group_id" INTEGER, "move_learn_method_id" INTEGER, "mastery" INTEGER);
 export const apiPokemonMove = sqliteTable('pokemon_v2_pokemonmove', {
   id: integer('id').notNull(),

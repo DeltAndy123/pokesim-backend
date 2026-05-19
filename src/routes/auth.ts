@@ -35,10 +35,7 @@ app.post('/register', validate('json', registerSchema), async (c) => {
       error instanceof SQLiteError &&
       error.code === 'SQLITE_CONSTRAINT_UNIQUE'
     ) {
-      return c.json(
-        { message: 'Username already exists' },
-        400,
-      );
+      return c.json({ message: 'Username already exists' }, 400);
     }
 
     console.error('Error during registration:', error);
@@ -69,10 +66,7 @@ app.post('/login', validate('json', loginSchema), async (c) => {
       }
     }
 
-    return c.json(
-      { message: 'Invalid username or password' },
-      401,
-    );
+    return c.json({ message: 'Invalid username or password' }, 401);
   } catch (error) {
     console.error('Error during login:', error);
     return c.json({ message: 'Internal server error' }, 500);

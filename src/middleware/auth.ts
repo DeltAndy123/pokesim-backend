@@ -1,7 +1,7 @@
 import { verifyToken } from '@services/auth';
 import { createMiddleware } from 'hono/factory';
 
-type Variables = {
+export type Variables = {
   userId: number;
 };
 

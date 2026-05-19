@@ -1,7 +1,10 @@
-import { zValidator } from '@hono/zod-validator'
-import type { ZodType } from 'zod'
+import { zValidator } from '@hono/zod-validator';
+import type { ZodType } from 'zod';
 
-export const validate = <T extends ZodType>(target: Parameters<typeof zValidator>[0], schema: T) =>
+export const validate = <T extends ZodType>(
+  target: Parameters<typeof zValidator>[0],
+  schema: T,
+) =>
   zValidator(target, schema, (result, c) => {
     if (!result.success) {
       return c.json(
@@ -12,6 +15,6 @@ export const validate = <T extends ZodType>(target: Parameters<typeof zValidator
           })),
         },
         400,
-      )
+      );
     }
-  })
+  });

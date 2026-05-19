@@ -10,10 +10,7 @@
     },
     "build": {
       "inputs": [{ "step": "install" }],
-      "commands": [
-        { "src": ".", "dest": "." },
-        "bun run db:migrate"
-      ]
+      "commands": [{ "src": ".", "dest": "." }, "bun run db:migrate"]
     }
   },
   "deploy": {

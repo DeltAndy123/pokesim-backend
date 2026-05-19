@@ -1,15 +1,11 @@
 import { db } from '@db/index';
 import { teamPokemon, teams } from '@db/schema';
-import { authMiddleware } from '@middleware/auth';
+import { authMiddleware, type Variables } from '@middleware/auth';
 import { validate } from '@middleware/validate';
 import { validateTeam } from '@services/validate';
 import { and, eq, inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-
-type Variables = {
-  userId: number;
-};
 
 const app = new Hono<{ Variables: Variables }>();
 
@@ -42,8 +38,8 @@ app.get('/', async (c) => {
     return c.json(
       userTeams.map((team) => ({
         ...team,
-        pokemon: pokemonByTeam.get(team.id) ?? []
-      }))
+        pokemon: pokemonByTeam.get(team.id) ?? [],
+      })),
     );
   } catch (error) {
     console.error('Error fetching teams:', error);
@@ -79,8 +75,10 @@ app.get('/:id', validate('param', getTeamSchema), async (c) => {
         id: p.id,
         teamId: p.teamId,
         pokemonId: p.pokemonId,
-        moves: [p.moveOneId, p.moveTwoId, p.moveThreeId, p.moveFourId].filter(Boolean) as number[],
-      }))
+        moves: [p.moveOneId, p.moveTwoId, p.moveThreeId, p.moveFourId].filter(
+          Boolean,
+        ) as number[],
+      })),
     });
   } catch (error) {
     console.error('Error fetching team:', error);
@@ -102,7 +100,7 @@ app.delete('/:id', validate('param', getTeamSchema), async (c) => {
       return c.json({ message: 'Team not found' }, 404);
     }
 
-    return c.body(null, 204)
+    return c.body(null, 204);
   } catch (error) {
     console.error('Error deleting team:', error);
     return c.json({ message: 'Internal server error' }, 500);
@@ -152,47 +150,50 @@ app.post('/', validate('json', teamSchema), async (c) => {
   }
 });
 
-app.put('/:id', validate('param', getTeamSchema), validate('json', teamSchema), async (c) => {
-  const userId = c.get('userId');
-  const { id } = c.req.valid('param');
-  const { name, pokemon } = c.req.valid('json');
+app.put(
+  '/:id',
+  validate('param', getTeamSchema),
+  validate('json', teamSchema),
+  async (c) => {
+    const userId = c.get('userId');
+    const { id } = c.req.valid('param');
+    const { name, pokemon } = c.req.valid('json');
 
-  try {
-    const validation = await validateTeam(pokemon);
-    if (!validation.result) {
-      return c.json({ message: validation.reason }, 400);
+    try {
+      const validation = await validateTeam(pokemon);
+      if (!validation.result) {
+        return c.json({ message: validation.reason }, 400);
+      }
+
+      const [team] = await db
+        .update(teams)
+        .set({ name })
+        .where(and(eq(teams.userId, userId), eq(teams.id, id)))
+        .returning();
+
+      if (!team) {
+        return c.json({ message: 'Team not found' }, 404);
+      }
+
+      await db.delete(teamPokemon).where(eq(teamPokemon.teamId, team.id));
+
+      await db.insert(teamPokemon).values(
+        pokemon.map((p) => ({
+          teamId: team.id,
+          pokemonId: p.pokemonId,
+          moveOneId: p.moves[0] ?? null,
+          moveTwoId: p.moves[1] ?? null,
+          moveThreeId: p.moves[2] ?? null,
+          moveFourId: p.moves[3] ?? null,
+        })),
+      );
+
+      return c.body(null, 204);
+    } catch (error) {
+      console.error('Error updating team:', error);
+      return c.json({ message: 'Internal server error' }, 500);
     }
-
-    const [team] = await db
-      .update(teams)
-      .set({ name })
-      .where(and(eq(teams.userId, userId), eq(teams.id, id)))
-      .returning();
-
-    if (!team) {
-      return c.json({ message: 'Team not found' }, 404);
-    }
-
-    await db
-      .delete(teamPokemon)
-      .where(eq(teamPokemon.teamId, team.id));
-
-    await db.insert(teamPokemon).values(
-      pokemon.map((p) => ({
-        teamId: team.id,
-        pokemonId: p.pokemonId,
-        moveOneId: p.moves[0] ?? null,
-        moveTwoId: p.moves[1] ?? null,
-        moveThreeId: p.moves[2] ?? null,
-        moveFourId: p.moves[3] ?? null,
-      })),
-    );
-
-    return c.body(null, 204);
-  } catch (error) {
-    console.error('Error updating team:', error);
-    return c.json({ message: 'Internal server error' }, 500);
-  }
-});
+  },
+);
 
 export default app;

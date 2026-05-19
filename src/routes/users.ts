@@ -1,14 +1,10 @@
 import { db } from '@db/index';
 import { users } from '@db/schema';
-import { authMiddleware } from '@middleware/auth';
+import { authMiddleware, type Variables } from '@middleware/auth';
 import { validate } from '@middleware/validate';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-
-type Variables = {
-  userId: number;
-};
 
 const app = new Hono<{ Variables: Variables }>();
 

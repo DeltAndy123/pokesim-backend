@@ -125,6 +125,8 @@ function applyMove(
     damageDealt: damage,
     effectiveness,
     fainted: target.hp === 0,
+    attackingPokemonId: attacker.pokemon[attacker.activeSlot].id,
+    defendingPokemonId: defender.pokemon[defender.activeSlot].id,
   });
 
   return target.hp === 0;

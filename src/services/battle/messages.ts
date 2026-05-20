@@ -38,6 +38,8 @@ export interface MoveOutcome {
   damageDealt: number;
   effectiveness: number;
   fainted: boolean;
+  attackingPokemonId: number;
+  defendingPokemonId: number;
 }
 
 export type ServerMessage =
